@@ -14,4 +14,6 @@ ll min_ll(ll a, ll b);
 
 void update_lab_taship_count(Lab* lab);
 
+bool select_course_permanently(double course_interest_quotient, double student_calibre);
+
 #endif

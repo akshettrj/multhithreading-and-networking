@@ -8,16 +8,18 @@ void err_n_die(const char *fmt, ...)
 
     errno_save = errno;
 
+    fprintf(stderr, COLOR_RED);
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
-    fflush(stdout);
+    fflush(stderr);
 
     if (errno_save != 0)
     {
         fprintf(stderr, "(errno = %d) : %s\n", errno_save, strerror(errno_save));
         fprintf(stderr, "\n");
-        fflush(stdout);
+        fprintf(stderr, COLOR_RESET);
+        fflush(stderr);
     }
 
     va_end(ap);

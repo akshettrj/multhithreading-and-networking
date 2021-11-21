@@ -23,11 +23,13 @@ typedef long long int ll;
 #define COURSE_NAME_LEN 9
 #define LAB_NAME_LEN 9
 #define STUDENT_NUM_PREFERENCES 3
+#define TUTORIAL_DELAY 5
 
 typedef struct Mentor {
     ll id;
     ll lab_id;
     ll taship_count;
+    bool avail;
     pthread_mutex_t lock;
 } Mentor;
 
@@ -40,6 +42,10 @@ typedef struct Course {
     ll *lab_ids;
     bool registeration_open;
     Mentor *ta;
+    ll tut_slots_avail;
+    pthread_mutex_t lock;
+    pthread_mutex_t tut_lock;
+    pthread_cond_t tut_cond;
 } Course;
 
 typedef struct Lab {

@@ -3,11 +3,10 @@
 
 #define BACKLOG 1024
 
-
 void* handle_connection(void *arg);
 void* thread_function(void*);
 
-pthread_mutex_t pool_lock;
+pthread_mutex_t pool_lock, print_lock;
 pthread_cond_t pool_ready;
 
 typedef struct {
@@ -35,9 +34,14 @@ int main(int argc, char **argv)
         err_n_die("usage: %s <number of workers in thread pool>", argv[0]);
 
     num_pool_threads = atoi(argv[1]);
+
+    if (num_pool_threads == 0)
+        err_n_die("error: number of threads in thread pool must be greater than 0");
+
     pthread_t thread_pool[num_pool_threads];
 
     pthread_mutex_init(&pool_lock, NULL);
+    pthread_mutex_init(&print_lock, NULL);
     pthread_cond_init(&pool_ready, NULL);
 
     for (int i = 0; i < DICTIONARY_SIZE; i++) {
@@ -64,13 +68,20 @@ int main(int argc, char **argv)
     if (listen(listenfd, BACKLOG) < 0)
         err_n_die("Error while listening to the socket!");
 
+    std::cout << COLOR_GREEN;
+    std::cout << "Server is running on port " << SERVER_PORT;
+    std::cout << " with a pool of " << num_pool_threads << " threads" << std::endl;
+    std::cout << COLOR_RESET;
+
     for ( ; ; )
     {
         struct sockaddr_in addr;
         socklen_t addr_len;
         char client_addr[MAXLINE+1];
 
+        printf(COLOR_YELLOW);
         printf("Waiting for connections on port %d...\n", SERVER_PORT);
+        printf(COLOR_RESET);
         fflush(stdout);
 
         connfd = accept(listenfd, (SA *) &addr, &addr_len);
@@ -82,8 +93,8 @@ int main(int argc, char **argv)
         Connection *conn = new Connection();
         conn->fd = client_pntr;
         connections.push(conn);
-        pthread_cond_signal(&pool_ready);
         pthread_mutex_unlock(&pool_lock);
+        pthread_cond_signal(&pool_ready);
         // pthread_create(&conn_thread, NULL, handle_connection, (void*)client_pntr);
 
     }
@@ -120,7 +131,9 @@ void* handle_connection(void* arg)
     memset(recvline, 0, MAXLINE);
     while (( bytes_read = read(connfd, recvline, MAXLINE-1) ) > 0)
     {
-        printf("%s", recvline);
+        pthread_mutex_lock(&print_lock);
+        printf("%sReceived new message: %s%s", COLOR_CYAN, recvline, COLOR_RESET);
+        pthread_mutex_unlock(&print_lock);
         if (recvline[bytes_read-1] == '\n')
         {
             break;
@@ -162,7 +175,7 @@ void* handle_connection(void* arg)
         response = dict_fetch(key1);
 
 
-    snprintf(sendline, MAXLINE, response.c_str());
+    snprintf(sendline, MAXLINE, "%s", response.c_str());
 
     sleep(2);
 

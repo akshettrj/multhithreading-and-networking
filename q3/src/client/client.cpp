@@ -3,6 +3,8 @@
 
 char SERVER_ADDRESS[] = "127.0.0.1";
 
+pthread_mutex_t print_mutex;
+
 typedef struct Request
 {
     int req_num;
@@ -74,11 +76,19 @@ void *client_thread(void *data)
 
     memset(recvline, 0, MAXLINE);
 
+    pthread_mutex_lock(&print_mutex);
+    std::cout \
+        << COLOR_YELLOW << request->req_num \
+        << COLOR_WHITE << ":" \
+        << COLOR_BLUE << thread_id \
+        << COLOR_WHITE << ":" << COLOR_GREEN;
     while ( (bytes_read = read(sockfd, recvline, MAXLINE-1)) > 0)
     {
-        printf("%d:%ld:%s\n", request->req_num, thread_id, recvline);
+        std::cout << recvline;
         memset(recvline, 0, MAXLINE);
     }
+    std::cout << COLOR_RESET << std::endl;
+    pthread_mutex_unlock(&print_mutex);
 
     if (bytes_read < 0)
         err_n_die("Error while reading data from the server");
@@ -98,6 +108,8 @@ int main(int argc, char **argv)
     std::cin >> num_requests;
 
     pthread_t client_threads[num_requests];
+
+    pthread_mutex_init(&print_mutex, NULL);
 
     for (int req_num=0; req_num<num_requests; req_num++)
     {

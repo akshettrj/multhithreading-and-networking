@@ -5,6 +5,14 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+bool select_course_permanently(double course_interest_quotient, double student_calibre)
+{
+    // Generate a random number between 0 and 1
+    double random_probability = (double)rand() / (double)RAND_MAX;
+
+    return (random_probability > (course_interest_quotient * student_calibre) ? true : false);
+}
+
 ll min_ll(ll a, ll b)
 {
     return a < b ? a : b;
@@ -57,6 +65,22 @@ Course* new_course_from_input(ll id)
     }
     course->registeration_open = true;
     course->ta = NULL;
+    course->tut_slots_avail = 0;
+    if (pthread_mutex_init(&course->tut_lock, NULL) != 0)
+    {
+        perror("Initializing Mutex Lock for Course");
+        exit(1);
+    }
+    if (pthread_mutex_init(&course->lock, NULL) != 0)
+    {
+        perror("Initializing Mutex Lock for Course");
+        exit(1);
+    }
+    if (pthread_cond_init(&course->tut_cond, NULL) != 0)
+    {
+        perror("Initializing Mutex Conditional Variable for Course");
+        exit(1);
+    }
 
     return course;
 }
@@ -136,6 +160,7 @@ Mentor** make_lab_mentors(ll lab_id, ll num_mentors)
             perror("Initializing Lab Mentor Lock");
             exit(1);
         }
+        mentor->avail = true;
 
         mentors[mentor_num] = mentor;
     }

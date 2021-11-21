@@ -7,6 +7,8 @@
 #include "q1.h"
 #include "utils.h"
 
+#define DEBUG 1
+
 // Counts
 ll num_courses = 0, num_students = 0, num_labs = 0;
 
@@ -18,40 +20,126 @@ Lab**       all_labs;
 pthread_t*  course_threads;
 pthread_t*  student_threads;
 
-// Thread function for each course
 void* course_thread_function(void *arg)
 {
     Course* course = (Course*)arg;
 
-    while (course->registeration_open == true)
+#if DEBUG == 1
+    printf("Thread for course %s (id: %lld) started\n", course->name, course->id);
+#endif
+
+    while (course->registeration_open)
     {
+        pthread_mutex_lock(&course->tut_lock);
+#if DEBUG == 1
+        printf("Lock for course %s acquired by course itself\n", course->name);
+#endif
+        // Look for TA
+        course->ta = NULL;
         for (ll lab_num=0; lab_num<course->num_labs; lab_num++)
         {
-            Lab* lab = all_labs[course->lab_ids[lab_num]];
+            if (course->ta != NULL)
+                break;
+
+            ll lab_id = course->lab_ids[lab_num];
+            Lab *lab = all_labs[lab_id];
             for (ll mentor_num=0; mentor_num<lab->num_mentors; mentor_num++)
             {
-                Mentor* mentor = lab->mentors[mentor_num];
+                Mentor *mentor = lab->mentors[mentor_num];
+                pthread_mutex_lock(&mentor->lock);
 
-                if (pthread_mutex_trylock(&mentor->lock) != 0) continue;
-
-                if (mentor->taship_count < min_ll(lab->taship_limit, lab->cur_max_taship_count))
+                // Check if Mentor can be made a TA
+                bool ta_requirements = mentor->avail;
+                ta_requirements = ta_requirements && (mentor->taship_count < lab->taship_limit);
+                ta_requirements = ta_requirements && (mentor->taship_count < lab->cur_max_taship_count);
+                if (!ta_requirements)
                 {
-                    mentor->taship_count += 1;
-                    printf("TA %lld from lab %s has been allocated to course %s for his %lld TA ship\n", mentor->id, lab->name, course->name, mentor->taship_count);
-                    update_lab_taship_count(lab); // For bonus
+                    pthread_mutex_unlock(&mentor->lock);
+                    continue;
                 }
+
+                course->ta = mentor;
+                mentor->avail = false;
+                mentor->taship_count += 1;
+                printf("TA %lld from lab %s has been allocated to course %s for his %lldth TA ship\n",\
+                        mentor->id,\
+                        lab->name,\
+                        course->name,\
+                        mentor->taship_count\
+                      );
+                break;
                 pthread_mutex_unlock(&mentor->lock);
             }
         }
+
+        ll num_tut_slots = (rand() % course->tut_max_slots) + 1;
+        course->tut_slots_avail = num_tut_slots;
+        printf("Course %s has been allocated %lld seats\n", course->name, course->tut_slots_avail);
+        pthread_mutex_unlock(&course->tut_lock);
+        pthread_cond_broadcast(&course->tut_cond);
+        sleep(TUTORIAL_DELAY);
+
     }
 
     return NULL;
 }
 
-// Thread function for each student
 void* student_thread_function(void *arg)
 {
     Student* student = (Student*)arg;
+#if DEBUG == 1
+    printf("Thread for student %lld started\n", student->id);
+#endif
+
+    sleep(student->preferences_filling_time);
+    printf("Student %lld has filled in preferences for course registeration\n", student->id);
+
+    for (ll pref_num=0; pref_num<STUDENT_NUM_PREFERENCES; pref_num++)
+    {
+        ll course_id = student->course_preferences[pref_num];
+        Course* course = all_courses[course_id];
+
+        // Print Simulation Details
+        if (pref_num > 0)
+        {
+            ll last_pref_course_id = student->course_preferences[pref_num-1];
+            Course* last_pref_course = all_courses[last_pref_course_id];
+            printf("Student %lld has changed current preference from %s (priority %lld) to %s (priority %lld)\n",\
+                    student->id,\
+                    last_pref_course->name,\
+                    pref_num,\
+                    course->name,\
+                    pref_num+1\
+                  );
+        }
+
+
+
+        pthread_mutex_lock(&course->tut_lock);
+
+#if DEBUG == 1
+        printf("Lock for course %s acquired by student number %lld\n", course->name, student->id);
+#endif
+
+        while (course->tut_slots_avail == 0 && course->registeration_open)
+        {
+            pthread_cond_wait(&course->tut_cond, &course->tut_lock);
+        }
+
+        if (!course->registeration_open)
+        {
+            pthread_mutex_unlock(&course->tut_lock);
+            continue;
+        }
+
+        if (course->tut_slots_avail > 0)
+        {
+            course->tut_slots_avail = course->tut_slots_avail - 1;
+            printf("Student %lld has been allocated a seat in the course %s\n", student->id, course->name);
+            sleep(TUTORIAL_DELAY);
+        }
+
+    }
     return NULL;
 }
 
@@ -91,11 +179,15 @@ int main()
     for (ll l_num=0; l_num<num_labs; l_num++)
         all_labs[l_num] = new_lab_from_input(l_num);
 
-    for (ll c_num=0; c_num<num_courses; c_num++)
-        pthread_create(&course_threads[c_num], NULL, course_thread_function, (void*)all_courses[c_num]);
+#if DEBUG == 1
+    printf("Took all the inputs\n");
+#endif
 
     for (ll s_num=0; s_num<num_students; s_num++)
         pthread_create(&student_threads[s_num], NULL, student_thread_function, (void*)all_students[s_num]);
+
+    for (ll c_num=0; c_num<num_courses; c_num++)
+        pthread_create(&course_threads[c_num], NULL, course_thread_function, (void*)all_courses[c_num]);
 
     for (ll s_num=0; s_num<num_students; s_num++)
         pthread_join(student_threads[s_num], NULL);
