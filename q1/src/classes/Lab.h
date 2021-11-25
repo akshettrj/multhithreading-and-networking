@@ -16,6 +16,9 @@ typedef struct Lab
 
     MentorQueue *mentors;       /* Done */
 
+    // Mentors ki array
+    // Max TA ship count amount mentors
+
 } Lab;
 
 Lab* new_lab_from_input(llint id);

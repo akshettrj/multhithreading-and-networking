@@ -11,6 +11,7 @@ typedef struct MentorNode
     struct MentorNode *next;            /* Done */
     struct MentorNode *prev;            /* Done */
 
+    // How many taships left
     llint taship_count;                 /* Done */
     pthread_mutex_t lock;               /* Done */
 

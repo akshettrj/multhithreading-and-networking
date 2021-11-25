@@ -47,11 +47,9 @@ void* course_thread_function(void *arg)
 #endif
         sleep(GAP_BETWEEN_TUTORIAL_SESSIONS);
 
-        pthread_mutex_lock(&course->lock);
         course->ta = NULL;
         course->ta_lab = NULL;
         bool can_find_ta = false;
-        course->tut_slots = 0;
 
         for (llint lab_num=0; lab_num<course->num_labs; lab_num++)
         {
@@ -86,6 +84,8 @@ void* course_thread_function(void *arg)
             mentor->taship_count -= 1;
             break;
         }
+
+        pthread_mutex_lock(&course->lock);
 
         if (course->ta == NULL)
         {
@@ -140,6 +140,7 @@ void* course_thread_function(void *arg)
         course->tut_slots = 0;
 
         sleep(TUTORIAL_DURATION);
+
         pthread_cond_broadcast(&course->tut_session_cond);
         pthread_mutex_unlock(&course->lock);
 
