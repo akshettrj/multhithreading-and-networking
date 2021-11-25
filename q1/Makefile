@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -g -Wall -lpthread
 
 default:
-	$(CC) $(CFLAGS) -o Q1 *.c
+	$(CC) $(CFLAGS) -o main src/*.c src/classes/*.c
 
 clean:
-	rm -f *.o Q1
+	rm -f *.o main
