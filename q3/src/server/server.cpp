@@ -93,8 +93,8 @@ int main(int argc, char **argv)
         Connection *conn = new Connection();
         conn->fd = client_pntr;
         connections.push(conn);
-        pthread_mutex_unlock(&pool_lock);
         pthread_cond_signal(&pool_ready);
+        pthread_mutex_unlock(&pool_lock);
         // pthread_create(&conn_thread, NULL, handle_connection, (void*)client_pntr);
 
     }
