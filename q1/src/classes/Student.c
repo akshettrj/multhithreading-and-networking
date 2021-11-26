@@ -7,7 +7,7 @@ bool widthraw_from_course(Student *student, Course *course)
     double prob = student->calibre_quotient * course->interest_quotient;
     double random_prob = (double)rand() / (double)RAND_MAX;
 
-    return (random_prob <= prob ? true : false);
+    return (random_prob >= prob ? true : false);
 }
 
 Student* new_student_from_input(llint id)
