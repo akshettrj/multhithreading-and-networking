@@ -25,7 +25,11 @@ Course* new_course_from_input(llint id)
     course->tut_slots = 0;
     course->ta = NULL;
     course->ta_lab = NULL;
-    course->is_open = true;
+
+    if (course->num_labs == 0 || course->tut_slots_limit < 1)
+        course->is_open = false;
+    else
+        course->is_open = true;
 
     return course;
 };

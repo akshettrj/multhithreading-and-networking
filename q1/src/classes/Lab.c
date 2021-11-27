@@ -27,7 +27,11 @@ Lab* new_lab_from_input(llint id)
     pthread_mutex_init(&lab->lock, NULL);
     lab->curr_max_taship = 0;
     lab->num_mentors_wo_max_taship = lab->num_mentors;
-    lab->lab_mentors_available = true;
+
+    if (lab->num_mentors == 0 || lab->taship_limit < 1)
+        lab->lab_mentors_available = false;
+    else
+        lab->lab_mentors_available = true;
 
     return lab;
 }
