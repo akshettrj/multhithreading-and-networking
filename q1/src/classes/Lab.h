@@ -6,20 +6,21 @@
 
 typedef struct Lab
 {
-    llint id;                   /* Done */
+    llint id;
 
-    /* Input Start */
-    char name[LAB_NAME_LEN];    /* Done */
-    llint num_mentors;          /* Done */
-    llint taship_limit;         /* Done */
-    /* Input End */
+    char name[LAB_NAME_LEN];
+    llint num_mentors;
+    llint taship_limit;
 
-    MentorQueue *mentors;       /* Done */
+    Mentor **mentors;
+    pthread_mutex_t lock;
 
-    // Mentors ki array
-    // Max TA ship count amount mentors
+    llint curr_max_taship;
+    llint num_mentors_wo_max_taship;
 
-} Lab;
+    bool lab_mentors_available;
+}
+Lab;
 
 Lab* new_lab_from_input(llint id);
 void print_lab(Lab *lab);

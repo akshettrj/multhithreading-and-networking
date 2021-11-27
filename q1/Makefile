@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -Wall -lpthread
+CFLAGS = -g -Wall -pthread
 
 default:
 	$(CC) $(CFLAGS) -o main src/*.c src/classes/*.c

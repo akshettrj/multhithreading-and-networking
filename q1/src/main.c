@@ -51,38 +51,69 @@ void* course_thread_function(void *arg)
         course->ta_lab = NULL;
         bool can_find_ta = false;
 
+        // TODO: Add logic for selecting TA
         for (llint lab_num=0; lab_num<course->num_labs; lab_num++)
         {
+            if (course->ta != NULL) break;
+
             llint lab_id = course->lab_ids[lab_num];
             Lab *lab = lab_nodes[lab_id];
-            MentorQueue *mentors = lab->mentors;
 
-            pthread_mutex_lock(&mentors->lock);
-            MentorNode *mentor = mentors->dequeue(mentors);
-            if (mentor == NULL)
-            {
 #if INFO_LEVEL >= 2
-                printf(\
-                        "%s%sCourse %s could not find a mentor in %s lab%s\n",\
-                        COLOR_RED_BOLD,\
-                        TEXT_UNDERLINE,\
-                        course->name,\
-                        lab->name,\
-                        COLOR_RESET\
-                      );
+            printf(\
+                    TEXT_UNDERLINE\
+                    COLOR_RED_BOLD\
+                    "Course %s is looking for TA in %s lab"\
+                    COLOR_RESET"\n",\
+                    course->name,\
+                    lab->name\
+                  );
 #endif
-                if (mentors->max_size > 0)
-                {
-                    can_find_ta = true;
-                }
-                pthread_mutex_unlock(&mentors->lock);
+
+            pthread_mutex_lock(&lab->lock);
+            if (!lab->lab_mentors_available)
+            {
+                pthread_mutex_unlock(&lab->lock);
                 continue;
             }
-            pthread_mutex_unlock(&mentors->lock);
-            course->ta = mentor;
-            course->ta_lab = lab;
-            mentor->taship_count -= 1;
-            break;
+            pthread_mutex_unlock(&lab->lock);
+            for (llint mentor_num=0; mentor_num<lab->num_mentors; mentor_num++)
+            {
+                Mentor *mentor = lab->mentors[mentor_num];
+                if (pthread_mutex_trylock(&mentor->lock) != 0) {
+                    /* Some other Course is using this Mentor */
+                    continue;
+                }
+                /* Mentor is locked */
+                if (mentor->taships_done != lab->curr_max_taship) {
+                    /* Cannot use this mentor */
+                    pthread_mutex_unlock(&mentor->lock);
+                    continue;
+                }
+
+                /* Mentor can be used */
+                mentor->taships_done += 1;
+                pthread_mutex_lock(&lab->lock);
+                lab->num_mentors_wo_max_taship -= 1;
+                if (lab->num_mentors_wo_max_taship == 0)
+                {
+                    lab->curr_max_taship += 1;
+                    lab->num_mentors_wo_max_taship = lab->num_mentors;
+                    if (lab->curr_max_taship == lab->taship_limit)
+                    {
+                        lab->lab_mentors_available = false;
+                        printf(\
+                                COLOR_BLUE\
+                                "Lab %s no longer has students available for TAship"\
+                                COLOR_RESET"\n",\
+                                lab->name\
+                              );
+                    }
+                }
+                pthread_mutex_unlock(&lab->lock);
+                course->ta = mentor;
+                course->ta_lab = lab;
+            }
         }
 
         pthread_mutex_lock(&course->lock);
@@ -111,7 +142,7 @@ void* course_thread_function(void *arg)
                 course->ta->id,\
                 course->ta_lab->name,\
                 course->name,\
-                course->ta->taship_count,\
+                course->ta->taships_done,\
                 COLOR_RESET\
               );
 
@@ -144,11 +175,7 @@ void* course_thread_function(void *arg)
         pthread_cond_broadcast(&course->tut_session_cond);
         pthread_mutex_unlock(&course->lock);
 
-        pthread_mutex_lock(&course->ta_lab->mentors->lock);
-        pthread_mutex_lock(&course->ta->lock);
-        course->ta_lab->mentors->enqueue(course->ta_lab->mentors, course->ta);
         pthread_mutex_unlock(&course->ta->lock);
-        pthread_mutex_unlock(&course->ta_lab->mentors->lock);
     }
 
 #if DEBUG >= 2
@@ -341,13 +368,6 @@ int main(int argc, char **argv)
     for (llint lab_num=0; lab_num<num_labs; lab_num++)
     {
         lab_nodes[lab_num] = new_lab_from_input(lab_num);
-        Lab *lab = lab_nodes[lab_num];
-        MentorNode *mentor = lab->mentors->head;
-        while (mentor != NULL)
-        {
-            mentor->taship_count = lab->taship_limit;
-            mentor = mentor->next;
-        }
 #if DEBUG >= 2
         print_lab(lab_nodes[lab_num]);
 #endif

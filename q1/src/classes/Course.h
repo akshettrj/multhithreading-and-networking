@@ -21,7 +21,7 @@ typedef struct Course
     pthread_cond_t tut_slots_cond;      // Initialized in constructor
     pthread_cond_t tut_session_cond;    // Initialized in constructor
     llint tut_slots;                    // Initialized in constructor
-    MentorNode *ta;                     // Initialized in constructor
+    Mentor *ta;                         // Initialized in constructor
     Lab *ta_lab;                        // Initialized in constructor
     bool is_open;                       // Initialized in constructor
 
