@@ -91,8 +91,20 @@ void* course_thread_function(void *arg)
                     continue;
                 }
 
-                /* Mentor can be used */
+                course->ta = mentor;
+                course->ta_lab = lab;
                 mentor->taships_done += 1;
+                printf(\
+                        "%sTA %lld from lab %s has been allocated to course %s for his %lldth TA ship%s\n",\
+                        COLOR_BLUE,\
+                        course->ta->id,\
+                        course->ta_lab->name,\
+                        course->name,\
+                        course->ta->taships_done,\
+                        COLOR_RESET\
+                      );
+
+                /* Mentor can be used */
                 pthread_mutex_lock(&lab->lock);
                 lab->num_mentors_wo_max_taship -= 1;
                 if (lab->num_mentors_wo_max_taship == 0)
@@ -111,8 +123,7 @@ void* course_thread_function(void *arg)
                     }
                 }
                 pthread_mutex_unlock(&lab->lock);
-                course->ta = mentor;
-                course->ta_lab = lab;
+                break;
             }
         }
 
@@ -135,16 +146,6 @@ void* course_thread_function(void *arg)
             pthread_mutex_unlock(&course->lock);
             continue;
         }
-
-        printf(\
-                "%sTA %lld from lab %s has been allocated to course %s for his %lldth TA ship%s\n",\
-                COLOR_BLUE,\
-                course->ta->id,\
-                course->ta_lab->name,\
-                course->name,\
-                course->ta->taships_done,\
-                COLOR_RESET\
-              );
 
         llint num_tut_slots = 1 + (rand() % course->tut_slots_limit);
         course->tut_slots = num_tut_slots;
