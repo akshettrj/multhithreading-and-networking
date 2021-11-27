@@ -4,7 +4,7 @@ bool is_successful(GoalChance *gc)
 {
     double rand_prob = (double)rand() / (double)RAND_MAX;
 
-    return rand_prob <= gc->probability ? true : false;
+    return rand_prob < gc->probability ? true : false;
 }
 
 GoalChance* new_goal_chance_from_input()
