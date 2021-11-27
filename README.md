@@ -1,7 +1,5 @@
-# osn-assignment-5
+# OSN Assignment 5
 
-# Question 1
+**Name:** Akshett Rai Jindal
 
-## Assumptions
-
-1. The names of the courses can have maximum 9 characters (excluding the null character at the end)
+**Roll No.:** 2019114001
