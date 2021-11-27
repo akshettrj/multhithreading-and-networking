@@ -176,6 +176,15 @@ void* course_thread_function(void *arg)
         pthread_cond_broadcast(&course->tut_session_cond);
         pthread_mutex_unlock(&course->lock);
 
+        printf(\
+                COLOR_BLUE\
+                "TA %lld from lab %s has completed the tutorial and left the course %s"\
+                COLOR_RESET "\n",\
+                course->ta->id,\
+                course->ta_lab->name,\
+                course->name\
+              );
+
         pthread_mutex_unlock(&course->ta->lock);
     }
 
