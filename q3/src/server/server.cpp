@@ -6,7 +6,7 @@
 void* handle_connection(void *arg);
 void* thread_function(void*);
 
-pthread_mutex_t pool_lock, print_lock;
+pthread_mutex_t pool_lock;
 pthread_cond_t pool_ready;
 
 typedef struct {
@@ -41,7 +41,6 @@ int main(int argc, char **argv)
     pthread_t thread_pool[num_pool_threads];
 
     pthread_mutex_init(&pool_lock, NULL);
-    pthread_mutex_init(&print_lock, NULL);
     pthread_cond_init(&pool_ready, NULL);
 
     for (int i = 0; i < DICTIONARY_SIZE; i++) {
@@ -131,9 +130,7 @@ void* handle_connection(void* arg)
     memset(recvline, 0, MAXLINE);
     while (( bytes_read = read(connfd, recvline, MAXLINE-1) ) > 0)
     {
-        pthread_mutex_lock(&print_lock);
         printf("%sReceived new message: %s%s", COLOR_CYAN, recvline, COLOR_RESET);
-        pthread_mutex_unlock(&print_lock);
         if (recvline[bytes_read-1] == '\n')
         {
             break;
