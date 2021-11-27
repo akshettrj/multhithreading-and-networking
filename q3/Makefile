@@ -1,6 +1,6 @@
 CXX=g++
 
-CFLAGS=-g -lpthread
+CFLAGS=-g -pthread
 
 all: client server
 
