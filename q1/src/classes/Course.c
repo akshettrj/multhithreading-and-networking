@@ -26,8 +26,15 @@ Course* new_course_from_input(llint id)
     course->ta = NULL;
     course->ta_lab = NULL;
 
-    if (course->num_labs == 0 || course->tut_slots_limit < 1)
+    if (course->num_labs == 0 || course->tut_slots_limit < 1) {
         course->is_open = false;
+        printf(\
+                "%sCourse %s does not have any TA mentors eligible and is removed from course offerings%s\n",\
+                COLOR_CYAN,\
+                course->name,\
+                COLOR_RESET\
+              );
+    }
     else
         course->is_open = true;
 

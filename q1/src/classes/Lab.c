@@ -28,8 +28,15 @@ Lab* new_lab_from_input(llint id)
     lab->curr_max_taship = 0;
     lab->num_mentors_wo_max_taship = lab->num_mentors;
 
-    if (lab->num_mentors == 0 || lab->taship_limit < 1)
+    if (lab->num_mentors == 0 || lab->taship_limit < 1) {
         lab->lab_mentors_available = false;
+        printf(\
+                COLOR_BLUE\
+                "Lab %s no longer has students available for TAship"\
+                COLOR_RESET"\n",\
+                lab->name\
+              );
+    }
     else
         lab->lab_mentors_available = true;
 
